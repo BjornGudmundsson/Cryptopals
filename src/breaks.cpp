@@ -67,10 +67,9 @@ namespace BreakModes {
 
     std::string byte_at_a_time_ECB(encryptionModes::ModeEncryptor *enc, std::string flag) {
         size_t block_size = detect_block_size(enc);
-        std::cout << "Block size: " << block_size << std::endl;
         bool is_ECB_encryptor = is_ECB(enc);
         if (!is_ECB_encryptor) {
-            //Don't feel like macking an exception for this
+            //Don't feel like making an exception for this
             return "";
         }
         std::map<std::string, char> block_map = block_to_chars(block_size, enc);
@@ -82,19 +81,13 @@ namespace BreakModes {
             size_t m = (block_size - (l % block_size) + 1) % block_size;
             std::string padding = "";
             for (size_t i = 0; i < m;i++) {
-                padding.insert(0, 1,'A');
+                padding.insert(0, 1,'B');
             }
             std::string ct = enc->encrypt_string(padding + tmp);
             size_t cl = ct.size();
-            std::cout << "M: " << m << std::endl;
-            std::cout << "Yo: " << ct.size() << std::endl;
-            std::cout << "stuff: " << (padding + tmp).size() << std::endl;
-            std::cout << "Fizz: " << tmp.size() << std::endl;
             std::string last_block = ct.substr(cl - block_size, block_size);
             if (block_map.find(last_block) == block_map.end()) {
                 //std::cout << block_map.size() << std::endl;
-                std::cout <<"L: " << (padding + tmp).size() << std::endl;
-                std::cout << "CT: " << ct.size() << std::endl;;
                 break;
                 continue;
             }

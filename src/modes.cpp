@@ -62,7 +62,10 @@ namespace encryptionModes
             std::string sub = padded.substr(i, block_size);
             byte *block_byte = (byte*)sub.c_str();
             aesEncryption.ProcessBlock(block_byte);
-            std::string t{(char*)block_byte};
+            std::string t;
+            for (size_t i = 0; i < block_size;i++) {
+                t.push_back(block_byte[i]);
+            }
             ret += t;
         }
         return ret;
@@ -222,9 +225,8 @@ namespace encryptionModes
     }
 
     std::string ECBEncryptor::encrypt_string(std::string pt) {
-        std::string fixed_size_pt = PKCS_padding(pt, this->block_size);
         std::string sk{this->key};
-        return encrypt_ECB_mode_128bits(fixed_size_pt, sk);
+        return encrypt_ECB_mode_128bits(pt, sk);
     }
 
     std::string ECBEncryptor::decrypt_string(std::string ct) {

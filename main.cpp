@@ -176,21 +176,12 @@ void byte_at_a_time_ECB() {
     std::string flag = base64::b64_to_bytes(b64_flag);
     char *key = "YELLOW SUBMARINE";
     encryptionModes::ModeEncryptor *enc = new encryptionModes::ECBEncryptor(key);
-    std::string ret = "AAA";
-    std::string padded = encryptionModes::PKCS_padding(ret, 16);
-    std::cout << "Yo" << std::endl;
-    std::string e = enc->encrypt_string(ret);
-    for (int i: e) {
-        std::cout << "i: " << i << std::endl;
-    }
-    std::cout << "Yo" << std::endl;
-    /*for (int i = 0; i < 20;i++) {
-        ret.push_back('A');
-        std::string eret = enc->encrypt_string(ret);
-        std::string pret = encryptionModes::PKCS_padding(ret, 16);
-        std::cout << "Size: " << eret.size() << std::endl;
-        assert(enc->decrypt_string(eret) == pret);
-    }*/
+    std::string s = "";
+    std::string dec = BreakModes::byte_at_a_time_ECB(enc, flag);
+    assert(flag.length() == dec.length());
+    assert(flag == dec);
+    std::cout << "Done: " << std::endl;
+    std::cout << "Flag: " << std::endl << dec << std::endl;
     delete enc;
 }
 
