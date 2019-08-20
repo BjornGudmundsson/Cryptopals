@@ -96,11 +96,18 @@ namespace parsing
     }
 
     JSON profile_for(std::string email) {
-        encoding::RandomGenerator rc = encoding::RandomGenerator();
-        int uid = rc.generate_random_num(INT64_MAX, INT64_MIN);
+        std::vector<std::string> rm_ambersand = splitString(email, ambersand);
+        if (rm_ambersand.empty()) {
+            throw -1;
+        }
+        std::vector<std::string> rm_equal = splitString(rm_ambersand[0], equalSign);
+        if (rm_equal.empty()) {
+            throw -1;
+        }
+        int uid = 10;//currenlty just a constant but should be an incrementive thing
         JSON j{};
         j.addInt(UID, uid);
-        j.addString(EMAIL, email);
+        j.addString(EMAIL, rm_equal[0]);
         j.addString(ROLE, ROLE_USER);
         return j;
     }
@@ -109,5 +116,14 @@ namespace parsing
         std::stringstream ss;
         ss << "email=" << j.getString(EMAIL) << ambersand << "uid=" << j.getInt(UID) << ambersand << "role=" << j.getString(ROLE);
         return ss.str();
+    }
+
+    size_t get_uid_length(std::string profile) {
+        //Split by ambersand
+        std::vector<std::string> rm_ambersand = splitString(profile, ambersand);
+        std::string uid_equals = rm_ambersand[1];
+        std::vector<std::string> vec = splitString(uid_equals, equalSign);
+        std::string uid = vec[1];
+        return uid.length();
     }
 } // namespace parsing

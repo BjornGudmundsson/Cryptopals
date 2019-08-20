@@ -29,6 +29,12 @@ namespace parsing
     std::vector<std::string> splitString(std::string s, char delimiter);
 
     JSON stringToJSON(std::string s);
+
+    JSON profile_for(std::string email);
+
+    std::string printProfile(JSON j);
+
+    size_t get_uid_length(std::string profile);
 } // namespace parsing
 
 #endif 

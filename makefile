@@ -4,7 +4,7 @@ CFLAGS = -g -Wall
 default: crypto
 
 crypto: main.o b64.o encoding.o frequency.o vigenere.o modes.o breaks.o parsing.o
-	$(CC) $(CFLAGS) -o crypto main.o b64.o math.o frequency.o vigenere.o modes.o breaks.o -lcryptopp
+	$(CC) $(CFLAGS) -o crypto main.o b64.o math.o frequency.o vigenere.o modes.o breaks.o parsing.o -lcryptopp
 
 
 main.o: main.cpp headers/b64.hpp headers/math.hpp headers/frequency.hpp headers/modes.hpp headers/breaks.hpp headers/parsing.hpp
