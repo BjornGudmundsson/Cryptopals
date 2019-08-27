@@ -61,7 +61,67 @@ namespace BreakModes {
             std::string ct = enc->encrypt_string(padded);
             block_map[ct] = c;
         }
-        std::cout << block_map.size() << std::endl;
+        return block_map;
+    }
+
+    std::string find_most_occurring_ct_block(std::string ct, size_t block_size) {
+        std::string most_common_block;
+        size_t max_count = 0;
+        size_t l = ct.size();
+        std::map<std::string, int> count_map;
+        for (size_t pos = 0; pos < l;pos += block_size) {
+            std::string block = ct.substr(pos, block_size);
+            if (count_map.find(block) == count_map.end()) {
+                count_map[block] = 0;
+            }
+            count_map[block] = count_map[block] + 1;
+            int count = count_map[block];
+            if (count > max_count) {
+                std::cout << "new block" << std::endl;
+                max_count = count;
+                most_common_block = block;
+            }
+        }
+        return most_common_block;
+    }
+
+    std::string shift_string_and_put(std::string s, char c) {
+        char temp = c;
+        std::string s2 = s;
+        size_t l = s2.size();
+        for (size_t i = 0; i < l;i++) {
+            char t = s2[i];
+            s2[i] = temp;
+            temp = t;
+        }
+        return s2;
+    }
+
+    std::map<std::string, char> block_to_chars_with_random_prefix(size_t block_size, encryptionModes::ModeEncryptor *enc, std::string known_part) {
+        std::map<std::string, char> block_map;
+        for (int i = -128; i <= 127;i++) {
+            char c = (char) i;
+            std::string ct;
+            size_t known_size = known_part.size();
+            std::string most_common_block;
+            if (known_size == block_size) {
+                std::string shifted = shift_string_and_put(known_part, c);
+                std::string shiftedx5 = shifted + shifted + shifted + shifted +shifted;
+                ct = enc->encrypt_string(shiftedx5);
+                most_common_block = find_most_occurring_ct_block(ct, block_size);
+            }
+            else {
+                std::string s = known_part;
+                s.insert(0, 1, c);
+                std::string padded = encryptionModes::PKCS_padding(s, block_size);
+                //I use 5 times the block to guarantee that there will be at least 2 blocks continous
+                std::string paddedx5 = padded + padded + padded + padded + padded + padded + padded;
+                ct = enc->encrypt_string(paddedx5);
+                most_common_block = find_most_occurring_ct_block(ct, block_size);
+                //std::cout << "Most common: " << int(most_common_block[most_common_block.size() - 1]) << std::endl;
+            }
+            block_map[most_common_block] = c;
+        }
         return block_map;
     }
 
@@ -89,7 +149,6 @@ namespace BreakModes {
             if (block_map.find(last_block) == block_map.end()) {
                 //std::cout << block_map.size() << std::endl;
                 break;
-                continue;
             }
             char byte = block_map[last_block];
             pt.insert(0, 1, byte);
@@ -97,5 +156,35 @@ namespace BreakModes {
             tmp = tmp.substr(0, l);
         }
         return pt;
+    }
+
+    std::string get_block_in_map(std::map<std::string, char> block_map, std::string ct, size_t block_size) {
+        size_t l = ct.size();
+        for (size_t pos = 0; pos < l;pos += block_size) {
+            std::string block = ct.substr(pos, block_size);
+            if (block_map.find(block) != block_map.end()) {
+                return block;
+            }
+        }
+        return "";
+    }
+
+    std::string byte_at_a_time_ECB_with_random_prefix(encryptionModes::ModeEncryptor *enc, std::string flag, size_t block_size) { 
+        size_t l = flag.size();
+        std::string known_part = "";
+        for (size_t i = 0; i < l;i++) {
+            std::string ct;
+            std::map<std::string, char> block_map = block_to_chars_with_random_prefix(block_size, enc, known_part);
+            std::string block;
+            while (!block.size() != 0) {
+                ct = enc->encrypt_string(flag);
+                block = get_block_in_map(block_map, ct, block_size);
+                //No need for anymore controlled attacker input than the flag
+            }
+            std::cout << "Exited " << std::endl;
+            char c = block_map[block];
+            known_part.insert(0, 1, c);
+        }
+        return known_part;
     }
 }

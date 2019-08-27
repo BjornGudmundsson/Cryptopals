@@ -159,7 +159,6 @@ void byte_at_a_time_ECB() {
     std::string dec = BreakModes::byte_at_a_time_ECB(enc, flag);
     assert(flag.length() == dec.length());
     assert(flag == dec);
-    std::cout << "Done: " << std::endl;
     std::cout << "Flag: " << std::endl << dec << std::endl;
     delete enc;
 }
@@ -196,7 +195,20 @@ void create_admin_profile() {
     std::cout << "My admin profile: " << admin_profile_pt << std::endl;
 }
 
+void byte_at_a_time_ECB_harder() {
+    std::string b64_flag = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK";
+    std::string flag = base64::b64_to_bytes(b64_flag);
+    char *key = "YELLOW SUBMARINE";
+    encryptionModes::RandomECBEncryptor *enc = new encryptionModes::RandomECBEncryptor(key, 16);
+    std::string s = "";
+    std::string dec = BreakModes::byte_at_a_time_ECB_with_random_prefix(enc, flag, 16);
+    assert(flag.length() == dec.length());
+    assert(flag == dec);
+    std::cout << "Flag: " << std::endl << dec << std::endl;
+    delete enc;
+}
+
 int main() {
-    create_admin_profile();
+    byte_at_a_time_ECB_harder();
     return 0;
 }

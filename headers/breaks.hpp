@@ -13,5 +13,6 @@ namespace BreakModes {
     bool is_ECB(encryptionModes::ModeEncryptor *enc);
 
     std::string byte_at_a_time_ECB(encryptionModes::ModeEncryptor *enc, std::string flag);
+    std::string byte_at_a_time_ECB_with_random_prefix(encryptionModes::ModeEncryptor *enc, std::string flag, size_t block_size);
 }
 #endif

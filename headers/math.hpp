@@ -25,6 +25,7 @@ namespace encoding {
             char *random_key(size_t l);
             char *random_IV(size_t l);
             std::string random_pad_string(std::string s);
+            std::string random_prefix_string(std::string, int max_len);
     };
 }
 #endif

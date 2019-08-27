@@ -124,7 +124,6 @@ namespace encoding {
     std::string bytes_to_hex(char *buf) {
         std::string ret = "";
         size_t l = strlen(buf);
-        std::cout << "Size: " << l << std::endl;
         for (size_t i = 0; i < l; i++) {
             std::string h = byte_to_hex(buf[i]);
             ret = ret + h;
@@ -135,7 +134,6 @@ namespace encoding {
     std::string bytes_to_hex(std::string buf) {
         std::string ret = "";
         size_t l = buf.size();
-        std::cout << "Size: " << l << std::endl;
         for (size_t i = 0; i < l; i++) {
             std::string h = byte_to_hex(buf[i]);
             ret = ret + h;
@@ -166,6 +164,15 @@ namespace encoding {
             t.push_back(this->generate_random_byte());
         }
         return t + tmp;
+    }
+
+    std::string RandomGenerator::random_prefix_string(std::string s, int max_prefix) {
+        int prefix_len = this->generate_random_num(max_prefix, 0);
+        std::string t = s;
+        for (int i = 0; i < prefix_len;i++) {
+            t.insert(0, 1, this->generate_random_byte());
+        }
+        return t;
     }
 
     char *RandomGenerator::random_key(size_t l) {

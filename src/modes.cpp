@@ -183,6 +183,7 @@ namespace encryptionModes
     std::string RandomEncryptor::encrypt_string(std::string pt) {
         encoding::RandomGenerator r;
         std::string padded = r.random_pad_string(pt);
+        std::cout << "Padded length: " << padded.size() << std::endl;
         std::string fixed = PKCS_padding(padded, 16);
         size_t l = fixed.size();
         char *t = (char*)malloc(l);
@@ -230,6 +231,35 @@ namespace encryptionModes
     }
 
     std::string ECBEncryptor::decrypt_string(std::string ct) {
+        return decrypt_ECB_mode_128bits(ct, this->key);
+    }
+
+    RandomECBEncryptor::RandomECBEncryptor(char *key, size_t block_size) {
+        this->key = key;
+        this->block_size = block_size;
+        this->rc = encoding::RandomGenerator{};
+    }
+
+    RandomECBEncryptor::~RandomECBEncryptor() {
+        free(this->key);
+    }
+
+    void RandomECBEncryptor::encrypt(char *pt) {
+        //Does nothing
+    }
+
+    void RandomECBEncryptor::decrypt(char *ct) {
+        //TODO:
+    }
+
+    std::string RandomECBEncryptor::encrypt_string(std::string pt) {
+        std::string prefixed = this->rc.random_prefix_string(pt, int(this->block_size));
+        std::string padded_prefix = PKCS_padding(prefixed, this->block_size);
+        std::string ct = encrypt_ECB_mode_128bits(padded_prefix, this->key);
+        return ct;
+    }
+
+    std::string RandomECBEncryptor::decrypt_string(std::string ct) {
         return decrypt_ECB_mode_128bits(ct, this->key);
     }
 } // namespace encryptionModes 

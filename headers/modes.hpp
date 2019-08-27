@@ -1,6 +1,7 @@
 #ifndef MODES_HPP
 #define MODES_HPP
 #include <string>
+#include "../headers/math.hpp"
 namespace encryptionModes {
     std::string decrypt_ECB_mode_128bits(std::string ct, std::string key);
     std::string PKCS_padding(std::string s, size_t block_size);
@@ -52,6 +53,20 @@ namespace encryptionModes {
         private:
             char *key;
             size_t block_size;
+    };
+
+    class RandomECBEncryptor: public ModeEncryptor {
+        public:
+            RandomECBEncryptor(char *key, size_t block_size);
+            ~RandomECBEncryptor();
+            void encrypt(char *pt);
+            void decrypt(char *ct);
+            std::string encrypt_string(std::string pt);
+            std::string decrypt_string(std::string ct);
+        private:
+            char *key;
+            size_t block_size;
+            encoding::RandomGenerator rc;
     };
 }
 #endif
