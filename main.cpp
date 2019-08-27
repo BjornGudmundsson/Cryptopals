@@ -150,51 +150,6 @@ void ex2_set2() {
     delete cbcEnc;
 }
 
-void byte_at_a_time_ECB() {
-    std::string b64_flag = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK";
-    std::string flag = base64::b64_to_bytes(b64_flag);
-    char *key = "YELLOW SUBMARINE";
-    encryptionModes::ModeEncryptor *enc = new encryptionModes::ECBEncryptor(key);
-    std::string s = "";
-    std::string dec = BreakModes::byte_at_a_time_ECB(enc, flag);
-    assert(flag.length() == dec.length());
-    assert(flag == dec);
-    std::cout << "Flag: " << std::endl << dec << std::endl;
-    delete enc;
-}
-
-void create_admin_profile() {
-    size_t block_size = 16;
-    encoding::RandomGenerator rc{};
-    char *key = rc.random_key(block_size);
-    encryptionModes::ECBEncryptor enc{key};
-    std::string admin_block_pt =  encryptionModes::PKCS_padding("admin", block_size);
-    std::cout << "Size: " << admin_block_pt.length() << std::endl;
-    //Create profile for admin block
-    std::string profile_admin_username = parsing::printProfile(parsing::profile_for("AAAAAAAAAA" + admin_block_pt));
-    std::cout <<"Stuff: " << profile_admin_username << std::endl;
-    //Add As to get email=AAAAAAAAAA as the first block of the ciphertext
-    std::string first_ct = enc.encrypt_string(profile_admin_username);
-    std::string admin_block_ct = first_ct.substr(block_size, block_size);
-    size_t uid_length = parsing::get_uid_length(profile_admin_username);
-    std::string uid_str = "uid=&role=";
-    std::cout << "Uid size: " << first_ct.length() << std::endl;
-    size_t size_of_username = 9 + (block_size - uid_length - uid_str.length());
-    std::string padding = "";
-    for (size_t i = 0; i < size_of_username;i++) {
-        padding += "A";
-    }
-    std::string attack_profile = parsing::printProfile(parsing::profile_for(padding));
-    std::string attack_ct = enc.encrypt_string(attack_profile);
-    size_t size_of_ct = attack_ct.length();
-    //Removing the last block
-    std::string attack_part_of_ct = attack_ct.substr(0, size_of_ct - block_size);
-    //Add the attack block
-    std::string my_encrypted_admin_profile = attack_part_of_ct + admin_block_ct;
-    std::string admin_profile_pt = enc.decrypt_string(my_encrypted_admin_profile);
-    std::cout << "My admin profile: " << admin_profile_pt << std::endl;
-}
-
 void byte_at_a_time_ECB_harder() {
     std::string b64_flag = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK";
     std::string flag = base64::b64_to_bytes(b64_flag);
@@ -205,7 +160,7 @@ void byte_at_a_time_ECB_harder() {
     assert(flag.length() == dec.length());
     assert(flag == dec);
     std::cout << "Flag: " << std::endl << dec << std::endl;
-    delete enc;
+    //delete enc;
 }
 
 int main() {

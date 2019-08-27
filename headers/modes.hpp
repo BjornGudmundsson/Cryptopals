@@ -67,6 +67,7 @@ namespace encryptionModes {
             char *key;
             size_t block_size;
             encoding::RandomGenerator rc;
+            std::string prefix;
     };
 }
 #endif

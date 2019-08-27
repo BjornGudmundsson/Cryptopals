@@ -1,7 +1,9 @@
 #include <string>
 #include "../headers/modes.hpp"
+#include "assert.h"
 #include <iostream>
 #include <map>
+#include <vector>
 namespace BreakModes {
     size_t detect_block_size(encryptionModes::ModeEncryptor *enc) {
         std::string A = "A";
@@ -64,27 +66,6 @@ namespace BreakModes {
         return block_map;
     }
 
-    std::string find_most_occurring_ct_block(std::string ct, size_t block_size) {
-        std::string most_common_block;
-        size_t max_count = 0;
-        size_t l = ct.size();
-        std::map<std::string, int> count_map;
-        for (size_t pos = 0; pos < l;pos += block_size) {
-            std::string block = ct.substr(pos, block_size);
-            if (count_map.find(block) == count_map.end()) {
-                count_map[block] = 0;
-            }
-            count_map[block] = count_map[block] + 1;
-            int count = count_map[block];
-            if (count > max_count) {
-                std::cout << "new block" << std::endl;
-                max_count = count;
-                most_common_block = block;
-            }
-        }
-        return most_common_block;
-    }
-
     std::string shift_string_and_put(std::string s, char c) {
         char temp = c;
         std::string s2 = s;
@@ -97,33 +78,6 @@ namespace BreakModes {
         return s2;
     }
 
-    std::map<std::string, char> block_to_chars_with_random_prefix(size_t block_size, encryptionModes::ModeEncryptor *enc, std::string known_part) {
-        std::map<std::string, char> block_map;
-        for (int i = -128; i <= 127;i++) {
-            char c = (char) i;
-            std::string ct;
-            size_t known_size = known_part.size();
-            std::string most_common_block;
-            if (known_size == block_size) {
-                std::string shifted = shift_string_and_put(known_part, c);
-                std::string shiftedx5 = shifted + shifted + shifted + shifted +shifted;
-                ct = enc->encrypt_string(shiftedx5);
-                most_common_block = find_most_occurring_ct_block(ct, block_size);
-            }
-            else {
-                std::string s = known_part;
-                s.insert(0, 1, c);
-                std::string padded = encryptionModes::PKCS_padding(s, block_size);
-                //I use 5 times the block to guarantee that there will be at least 2 blocks continous
-                std::string paddedx5 = padded + padded + padded + padded + padded + padded + padded;
-                ct = enc->encrypt_string(paddedx5);
-                most_common_block = find_most_occurring_ct_block(ct, block_size);
-                //std::cout << "Most common: " << int(most_common_block[most_common_block.size() - 1]) << std::endl;
-            }
-            block_map[most_common_block] = c;
-        }
-        return block_map;
-    }
 
     std::string byte_at_a_time_ECB(encryptionModes::ModeEncryptor *enc, std::string flag) {
         size_t block_size = detect_block_size(enc);
@@ -158,32 +112,88 @@ namespace BreakModes {
         return pt;
     }
 
-    std::string get_block_in_map(std::map<std::string, char> block_map, std::string ct, size_t block_size) {
-        size_t l = ct.size();
-        for (size_t pos = 0; pos < l;pos += block_size) {
-            std::string block = ct.substr(pos, block_size);
-            if (block_map.find(block) != block_map.end()) {
-                return block;
+    std::string get_block_in_map(std::vector<std::map<std::string, char>> block_vec, std::string ct, size_t block_size) {
+        for (std::map<std::string, char> block_map: block_vec) {
+            size_t l = ct.size();
+            for (size_t pos = 0; pos < l;pos += block_size) {
+                std::string block = ct.substr(pos, block_size);
+                if (block_map.find(block) != block_map.end()) {
+                    return block;
+                }
             }
         }
         return "";
     }
 
+    size_t get_size_of_prefix(encryptionModes::ModeEncryptor *enc, std::string flag) {
+        std::string block = enc->encrypt_string(flag);
+        size_t default_block_size = block.size();
+        char A = 'A';
+        std::string padding = "";
+        int count = 0;
+        while (block.size() == default_block_size) {
+            padding.insert(0, 1, A);
+            block = enc->encrypt_string(padding + flag);
+            count++;
+        }
+        return count - 1; 
+    }
+
+    std::string get_base_padding(size_t prefix_size) {
+        std::string padding = "";
+        for (size_t i = 0; i < prefix_size;i++)  {
+            padding.push_back('A');
+        }
+        return padding;
+    }
+
+    std::map<std::string, char> get_block_char_with_prefix(std::string known_part, size_t block_size, encryptionModes::ModeEncryptor *enc) {
+        size_t l = known_part.size();
+        std::string last_part_of_block;
+        std::map<std::string, char> block_to_char;
+        if (l >= block_size) {
+            last_part_of_block = known_part.substr(0, block_size - 1);
+        }
+        else {
+            last_part_of_block = encryptionModes::PKCS_padding(known_part, block_size - 1);
+        }
+        size_t prefix_size = get_size_of_prefix(enc, "");
+        std::string base_padding = get_base_padding(prefix_size);
+        for (int i = -128; i <= 127;i++) {
+            char c = (char) i;
+            std::string next_block = last_part_of_block;
+            next_block.insert(0, 1, c);
+            std::string ct = enc->encrypt_string(base_padding + next_block);
+            std::string ct_block = ct.substr(block_size, block_size);
+            block_to_char[ct_block] = c;
+        }
+        return block_to_char;
+    }
+
+    char get_next_char(std::string known_part, std::string ct, encryptionModes::ModeEncryptor *enc, size_t block_size) {
+        std::map<std::string, char> block_to_char = get_block_char_with_prefix(known_part, block_size, enc);
+        size_t l = ct.size();
+        for (size_t pos = 0; pos < l;pos += block_size) {
+            std::string block = ct.substr(pos, block_size);
+            if (block_to_char.find(block) != block_to_char.end()) {
+                return block_to_char[block];
+            }
+        }
+        return '\x0';
+    }
+
     std::string byte_at_a_time_ECB_with_random_prefix(encryptionModes::ModeEncryptor *enc, std::string flag, size_t block_size) { 
+        size_t prefix_size = get_size_of_prefix(enc, flag);
+        std::string base_padding = get_base_padding(prefix_size);
+        //Now we know it is a multiple of the block size - no added padding.
+        //Storing what bytes we already know.
         size_t l = flag.size();
         std::string known_part = "";
         for (size_t i = 0; i < l;i++) {
-            std::string ct;
-            std::map<std::string, char> block_map = block_to_chars_with_random_prefix(block_size, enc, known_part);
-            std::string block;
-            while (!block.size() != 0) {
-                ct = enc->encrypt_string(flag);
-                block = get_block_in_map(block_map, ct, block_size);
-                //No need for anymore controlled attacker input than the flag
-            }
-            std::cout << "Exited " << std::endl;
-            char c = block_map[block];
-            known_part.insert(0, 1, c);
+            base_padding.push_back('A');
+            std::string ct = enc->encrypt_string(base_padding + flag);
+            char next_byte = get_next_char(known_part, ct, enc, block_size);
+            known_part.insert(0, 1, next_byte);
         }
         return known_part;
     }

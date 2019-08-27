@@ -238,6 +238,7 @@ namespace encryptionModes
         this->key = key;
         this->block_size = block_size;
         this->rc = encoding::RandomGenerator{};
+        this->prefix = rc.random_prefix_string("", this->block_size);
     }
 
     RandomECBEncryptor::~RandomECBEncryptor() {
@@ -253,8 +254,9 @@ namespace encryptionModes
     }
 
     std::string RandomECBEncryptor::encrypt_string(std::string pt) {
-        std::string prefixed = this->rc.random_prefix_string(pt, int(this->block_size));
+        std::string prefixed = this->prefix + pt;
         std::string padded_prefix = PKCS_padding(prefixed, this->block_size);
+        //std::cout << padded_prefix.substr(10, 20) << std::endl;
         std::string ct = encrypt_ECB_mode_128bits(padded_prefix, this->key);
         return ct;
     }
