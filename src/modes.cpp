@@ -19,6 +19,36 @@ namespace encryptionModes
         return s;
     }
 
+    std::string remove_PKCS_padding(std::string s, size_t block_size) {
+        size_t l = s.size();
+        if (l == 0) {
+            return s;
+        }
+        int invalid = -1;
+        if (l % block_size != 0) {
+            throw invalid;
+        }
+        char last_byte = s[l - 1];
+        if (last_byte >= block_size) {
+            return s;
+        }
+        if (last_byte > ((char) l)) {
+            //Throw -1 in case there i
+            throw invalid;
+        }
+        for (char i = 1; i < last_byte && i > 0;i++) {
+            char nxt_byte = s[l - 1 - i];
+            if (nxt_byte != last_byte) {
+                throw invalid;
+            }
+        }
+        std::string sub = s.substr(0, l - last_byte);
+        if (sub.size() % block_size != (block_size - last_byte)) {
+            throw invalid;
+        }
+        return sub;
+    }
+
     std::string decrypt_ECB_mode_128bits(std::string ct, std::string key) {
         size_t  block_size = 16;
         size_t l = ct.size();
@@ -157,11 +187,31 @@ namespace encryptionModes
     }
 
     std::string CBCEncryptor::encrypt_string(std::string pt ) {
-        return "";
+        size_t l = pt.size();
+        char *temp = (char*)malloc(l);
+        for (size_t i = 0; i < l;i++) {
+            temp[i] = pt[i];
+        }
+        std::string ret;
+        encrypt_CBC_mode_128bits(temp, this->key, this->IV);
+        for (size_t i = 0; i < l;i++) {
+            ret.push_back(temp[i]);
+        }
+        return ret;
     }
 
     std::string CBCEncryptor::decrypt_string(std::string ct) {
-        return "";
+        size_t l = ct.size();
+        char *temp = (char*) malloc(l);
+        for (size_t i = 0; i < l;i++) {
+            temp[i] = ct[i];
+        }
+        decrypt_CBC_mode_128bits(temp, this->key, this->IV);
+        std::string ret;
+        for (size_t i = 0; i < l;i++) {
+            ret.push_back(temp[i]);
+        }
+        return ret;
     }
 
     RandomEncryptor::RandomEncryptor() {

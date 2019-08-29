@@ -163,7 +163,44 @@ void byte_at_a_time_ECB_harder() {
     //delete enc;
 }
 
+
+void test_remove_PKCS() {
+    //These should succeed
+    try {
+        std::string s1 = encryptionModes::PKCS_padding("1", 16);
+        std::string t1 = encryptionModes::remove_PKCS_padding(s1, 16);
+        std::cout << "T1: Passed" << std::endl;
+        std::string s2 = encryptionModes::PKCS_padding("2\x2\x2", 3);
+        std::string t2 = encryptionModes::remove_PKCS_padding(s2, 3);
+        std::cout << "T2: Passed: " << std::endl;
+    }
+    catch (int e) {
+        std::cout <<"T1 or T2: failed" << std::endl;
+    }
+    //These should fail
+    try {
+        std::string t3 = encryptionModes::remove_PKCS_padding("1\x1\x2", 3);
+        std::cout << "T3: Failed" << std::endl;
+    }
+    catch (int e) {
+        std::cout <<" T3: Passed" << std::endl;
+    }
+}
+
+void test_CBC() {
+    std::string pt = "YELLOW SUBMARINEYELLOW SUBMARINEYELLOW SUBMARINE";
+    char *key = (char*) malloc(16);
+    strcpy(key, "YELLOW SUBMARINE");
+    char *IV = (char*) malloc(16);
+    strcpy(IV, key);
+    encryptionModes::CBCEncryptor enc{key, IV};
+    std::string ct = enc.encrypt_string(pt);
+    assert(pt != ct);
+    std::string ret = enc.decrypt_string(ct);
+    std::cout << (ret == pt) << std::endl;
+    //assert(pt == ret);
+}
 int main() {
-    byte_at_a_time_ECB_harder();
+    test_CBC();
     return 0;
 }
