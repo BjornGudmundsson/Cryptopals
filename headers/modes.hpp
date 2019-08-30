@@ -70,5 +70,7 @@ namespace encryptionModes {
             encoding::RandomGenerator rc;
             std::string prefix;
     };
+
+    bool CBC_admin_validator(CBCEncryptor *enc, std::string ct);
 }
 #endif

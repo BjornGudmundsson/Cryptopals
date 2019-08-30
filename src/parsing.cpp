@@ -126,4 +126,5 @@ namespace parsing
         std::string uid = vec[1];
         return uid.length();
     }
+
 } // namespace parsing

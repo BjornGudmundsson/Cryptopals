@@ -200,7 +200,28 @@ void test_CBC() {
     std::cout << (ret == pt) << std::endl;
     //assert(pt == ret);
 }
+
+void test_CBC_bitflip_attack() {
+    size_t block_size = 16;
+    std::string prefix = "comment1=cooking%20MCs;userdata=";
+    std::string appendix = ";comment2=%20like%20a%20pound%20of%20bacon";
+    size_t data_size = block_size - (prefix.size() % block_size);
+    std::string user_data;
+    for (size_t i = 0; i < data_size;i++) {
+        user_data.push_back('A');
+    }
+    char *s = "YELLOW SUBMARINE";
+    char *key = (char*) malloc(block_size);
+    strcpy(key, s);
+    char *IV = (char*) malloc(block_size);
+    strcpy(IV, key);
+    encryptionModes::CBCEncryptor *enc = new encryptionModes::CBCEncryptor{key, IV};
+    std::string ct = BreakModes::CBC_bitflip_padding(enc, user_data, block_size);
+    std::string pt = BreakModes::CBC_bitflip_padding_attack(enc, block_size, ct);
+    delete enc;
+    std::cout << "CBC bitflipping attack works!" << std::endl;
+}
 int main() {
-    test_CBC();
+    test_CBC_bitflip_attack();
     return 0;
 }

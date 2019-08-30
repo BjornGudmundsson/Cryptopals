@@ -14,5 +14,7 @@ namespace BreakModes {
 
     std::string byte_at_a_time_ECB(encryptionModes::ModeEncryptor *enc, std::string flag);
     std::string byte_at_a_time_ECB_with_random_prefix(encryptionModes::ModeEncryptor *enc, std::string flag, size_t block_size);
+    std::string CBC_bitflip_padding(encryptionModes::CBCEncryptor *enc, std::string user_data, size_t block_size);
+    std::string CBC_bitflip_padding_attack(encryptionModes::CBCEncryptor *dec, size_t block_size, std::string ct);
 }
 #endif

@@ -1,9 +1,11 @@
 #include <string>
 #include "../headers/modes.hpp"
+#include "../headers/parsing.hpp"
 #include "assert.h"
 #include <iostream>
 #include <map>
 #include <vector>
+#include <algorithm>
 namespace BreakModes {
     size_t detect_block_size(encryptionModes::ModeEncryptor *enc) {
         std::string A = "A";
@@ -196,5 +198,35 @@ namespace BreakModes {
             known_part.insert(0, 1, next_byte);
         }
         return known_part;
+    }
+
+    std::string CBC_bitflip_padding(encryptionModes::CBCEncryptor *enc, std::string user_data, size_t block_size) {
+        std::string prefix = "comment1=cooking%20MCs;userdata=";
+        std::string appendix = ";comment2=%20like%20a%20pound%20of%20bacon";
+        std::vector<std::string> split_by_semi_colon = parsing::splitString(user_data, ';');
+        std::string join;
+        for (std::string s: split_by_semi_colon) {
+            join += s;
+        }
+        std::vector<std::string> split_by_equal_sign = parsing::splitString(join, '=');
+        std::string ud;
+        for (std::string s: split_by_equal_sign) {
+            ud += s;
+        }
+        std::string pt = prefix + ud + appendix;
+        std::string ct = enc->encrypt_string(pt);
+        return ct;
+    }
+
+    std::string CBC_bitflip_padding_attack(encryptionModes::CBCEncryptor *dec, size_t block_size, std::string ct) {
+        std::string prefix = "comment1=cooking%20MCs;userdata=";
+        std::string appendix = ";comment2=%20like%20a%20pound%20of%20bacon";
+        size_t start_index = ct.size() - appendix.size() - block_size;
+        std::string attack = encryptionModes::PKCS_padding(";admin=true;", block_size);
+        std::string pt_attack = appendix.substr(0, block_size);
+        for (size_t i = 0; i < block_size;i++) {
+            ct[start_index + i] ^= (attack[i] ^ pt_attack[i]);
+        }
+        return dec->decrypt_string(ct);
     }
 }

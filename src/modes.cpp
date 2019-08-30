@@ -1,5 +1,6 @@
 #include "cryptopp/aes.h"
 #include <iostream>
+#include <string>
 #include "../headers/modes.hpp"
 #include "../headers/math.hpp"
 using namespace CryptoPP;
@@ -313,5 +314,11 @@ namespace encryptionModes
 
     std::string RandomECBEncryptor::decrypt_string(std::string ct) {
         return decrypt_ECB_mode_128bits(ct, this->key);
+    }
+
+
+    bool CBC_admin_validator(CBCEncryptor *enc, std::string ct) {
+        std::string pt = enc->decrypt_string(ct);
+        return pt.find(";admin=true;") != std::string::npos;
     }
 } // namespace encryptionModes 
