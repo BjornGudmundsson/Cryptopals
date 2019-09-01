@@ -29,15 +29,14 @@ namespace encryptionModes
         if (l % block_size != 0) {
             throw invalid;
         }
+        char bs = (char) block_size;
         char last_byte = s[l - 1];
-        if (last_byte >= block_size) {
-            return s;
-        }
-        if (last_byte > ((char) l)) {
-            //Throw -1 in case there i
+        if (last_byte > bs || last_byte < 1) {
+            //There must always be some padding for any string.
+            //I.e it must be padded with atleast 1 byte between 1 and block size
             throw invalid;
         }
-        for (char i = 1; i < last_byte && i > 0;i++) {
+        for (int i = 1; i < (int)last_byte;i++) {
             char nxt_byte = s[l - 1 - i];
             if (nxt_byte != last_byte) {
                 throw invalid;
@@ -154,11 +153,9 @@ namespace encryptionModes
         }
     }
 
-    void decrypt_CBC_mode_128bits(char *ct, char *key, char *IV) {
+    void decrypt_CBC_mode_128bits(char *ct, char *key, char *IV, size_t ct_size) {
         //The size of each block;
         size_t l = strlen(key);
-        //Total size of the plaintext
-        size_t ct_size = strlen(ct);
         size_t iterations = ct_size / l;
         for (size_t i = iterations - 1; i > 0;i--) {
             char *curr_block = ct + i * l;
@@ -176,7 +173,7 @@ namespace encryptionModes
     }
 
     CBCEncryptor::~CBCEncryptor() {
-        free(this->IV);
+        free(this->key);
         free(this->IV);
     }
 
@@ -184,14 +181,15 @@ namespace encryptionModes
         encrypt_CBC_mode_128bits(pt, this->key, this->IV);
     }
     void CBCEncryptor::decrypt(char *ct) {
-        decrypt_CBC_mode_128bits(ct, this->key, this->IV);
+        decrypt_CBC_mode_128bits(ct, this->key, this->IV, strlen(ct));
     }
 
     std::string CBCEncryptor::encrypt_string(std::string pt ) {
-        size_t l = pt.size();
+        std::string padded = PKCS_padding(pt, strlen(this->key));
+        size_t l = padded.size();
         char *temp = (char*)malloc(l);
         for (size_t i = 0; i < l;i++) {
-            temp[i] = pt[i];
+            temp[i] = padded[i];
         }
         std::string ret;
         encrypt_CBC_mode_128bits(temp, this->key, this->IV);
@@ -207,11 +205,28 @@ namespace encryptionModes
         for (size_t i = 0; i < l;i++) {
             temp[i] = ct[i];
         }
-        decrypt_CBC_mode_128bits(temp, this->key, this->IV);
+        decrypt_CBC_mode_128bits(temp, this->key, this->IV, ct.size());
         std::string ret;
         for (size_t i = 0; i < l;i++) {
             ret.push_back(temp[i]);
         }
+        return ret;
+    }
+
+    std::string CBCEncryptor::decrypt_string_with_custom_IV(std::string ct, std::string IV) {
+        size_t l = ct.size();
+        char *temp = (char*) malloc(l);
+        for (size_t i = 0; i < l;i++) {
+            temp[i] = ct[i];
+        }
+        char *iv = (char*) malloc(IV.size());
+        strcpy(iv, IV.c_str());
+        decrypt_CBC_mode_128bits(temp, this->key, iv, ct.size());
+        std::string ret;
+        for (size_t i = 0; i < l;i++) {
+            ret.push_back(temp[i]);
+        }
+        free(iv);
         return ret;
     }
 

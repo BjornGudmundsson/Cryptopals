@@ -1,6 +1,7 @@
 #include <string>
 #include "../headers/modes.hpp"
 #include "../headers/parsing.hpp"
+#include "../headers/b64.hpp"
 #include "assert.h"
 #include <iostream>
 #include <map>
@@ -228,5 +229,117 @@ namespace BreakModes {
             ct[start_index + i] ^= (attack[i] ^ pt_attack[i]);
         }
         return dec->decrypt_string(ct);
+    }
+
+    bool decryption_is_valid_padding(std::string ct, encryptionModes::CBCEncryptor *enc, size_t block_size, std::string IV) {
+        std::string pt = enc->decrypt_string_with_custom_IV(ct, IV);
+        bool valid;
+        try {
+            std::string t = encryptionModes::remove_PKCS_padding(pt, block_size);
+            valid = true;
+        }
+        catch(int e) {
+            valid = false;
+        }
+        return valid;
+    }
+
+    std::string get_partial_padding(char c, size_t count) {
+        std::string ret;
+        for (size_t i = 0; i < count;i++) {
+            ret.push_back(c);
+        }
+        return ret;
+    }
+
+    std::string get_random_string_for_CBC_padding() {
+        std::string s1 = "MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIGp1bXBpbmc=";
+        std::string s2 = "MDAwMDAxV2l0aCB0aGUgYmFzcyBraWNrZWQgaW4gYW5kIHRoZSBWZWdhJ3MgYXJlIHB1bXBpbic=";
+        std::string s3 = "MDAwMDAyUXVpY2sgdG8gdGhlIHBvaW50LCB0byB0aGUgcG9pbnQsIG5vIGZha2luZw==";
+        std::string s4 = "MDAwMDAzQ29va2luZyBNQydzIGxpa2UgYSBwb3VuZCBvZiBiYWNvbg==";
+        std::string s5 = "MDAwMDA0QnVybmluZyAnZW0sIGlmIHlvdSBhaW4ndCBxdWljayBhbmQgbmltYmxl";
+        std::string s6 = "MDAwMDA1SSBnbyBjcmF6eSB3aGVuIEkgaGVhciBhIGN5bWJhbA==";
+        std::string s7 = "MDAwMDA2QW5kIGEgaGlnaCBoYXQgd2l0aCBhIHNvdXBlZCB1cCB0ZW1wbw==";
+        std::string s8 = "MDAwMDA3SSdtIG9uIGEgcm9sbCwgaXQncyB0aW1lIHRvIGdvIHNvbG8=";
+        std::string s9 = "MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbnQgb2g=";
+        std::string s10 = "MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93";
+        std::vector<std::string> vec{s1, s2, s3, s4, s5, s6, s7, s8, s9, s10};
+        encoding::RandomGenerator rc{};
+        int n = rc.generate_random_num(9, 0);
+        return base64::b64_to_bytes(vec[n]);
+    }
+
+    std::string xor_two_string(std::string s1, std::string s2) {
+        size_t l = s1.size();
+        if (l != s2.size()) {
+            return "";
+        }
+        std::string ret;
+        for (size_t i = 0; i < l;i++) {
+            ret.insert(0, 1, s1[i] ^ s2[i]);
+        }
+        return ret;
+    }
+
+    std::string CBC_padding_oracle_attack(std::string ct, std::string IV, encryptionModes::CBCEncryptor *enc, size_t block_size) {
+        size_t l = ct.size();
+        size_t block_count = l / block_size;
+        //This is a buffer to store the found bytes
+        std::string pt;
+        std::string attack_block{IV};
+        //Finding the bytes of the CT one byte at a time
+        for (size_t i = 0; i < block_count;i++) { 
+            //iterate over all bytes
+            std::string victim_block{ct.substr(i * block_size, block_size)};
+            std::string known_bytes = "";
+            std::string appendix;
+            size_t padding = 0;
+            std::string all_ones = get_partial_padding('\xff', block_size);
+            char all_one = '\xff';
+            std::string s = xor_two_string(all_ones, attack_block);
+            while (!decryption_is_valid_padding(victim_block, enc, block_size, s) && padding != block_size) 
+            {
+                all_ones[block_size - 1 - padding] = '\x0';
+                padding++;
+                s = xor_two_string(all_ones, attack_block);
+            }
+            if (padding != block_size) {
+                for (size_t p = 0; p < padding;p++) {
+                    known_bytes.push_back((char) padding);
+                }
+            }
+            for (size_t b = 0; b <= block_size;b++) {
+                size_t count_known_bytes = known_bytes.size();
+                char padding = (char) (count_known_bytes + 1);
+                if (count_known_bytes != 0) {
+                    for (size_t k = 0; k < count_known_bytes;k++) {
+                        appendix.push_back(padding);
+                    }
+                }
+                if (count_known_bytes == block_size) {
+                    break;
+                }
+                for (int j = 127; j >= -128;j--) {
+                    char c = (char) j;
+                    std::string temp_attack_block{attack_block};
+                    for (size_t pos = 0; pos < count_known_bytes;pos++) {
+                        temp_attack_block[block_size - 1 - pos] ^= (known_bytes[count_known_bytes - 1 - pos] ^ padding);
+                    }
+                    temp_attack_block[block_size - 1 - count_known_bytes] ^= (c ^ padding);
+                    //std::cout << "Decrypting: " << j << std::endl;
+                    bool has_valid_padding = decryption_is_valid_padding(temp_attack_block + victim_block, enc, block_size, temp_attack_block);
+                    if (has_valid_padding) {
+                        known_bytes.insert(0, 1, c);
+                        break;
+                    }
+                }
+            }
+            if (known_bytes.size() == block_size) {
+                pt += known_bytes;   
+            }
+            attack_block = victim_block;
+        }
+        //Handling the last block seperately
+        return pt;
     }
 }

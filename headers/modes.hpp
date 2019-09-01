@@ -7,7 +7,7 @@ namespace encryptionModes {
     std::string PKCS_padding(std::string s, size_t block_size);
     std::string remove_PKCS_padding(std::string s, size_t block_size);
     void encrypt_ECB_mode_128bits(char *pt, char *key);
-    void decrypt_CBC_mode_128bits(char *ct, char *key, char *IV);
+    void decrypt_CBC_mode_128bits(char *ct, char *key, char *IV, size_t ct_size);
     void encrypt_CBC_mode_128bits(char *pt, char *key, char *IV);
 
     //Classes
@@ -29,6 +29,7 @@ namespace encryptionModes {
             void decrypt(char *pt);
             std::string encrypt_string(std::string pt);
             std::string decrypt_string(std::string ct);
+            std::string decrypt_string_with_custom_IV(std::string ct, std::string IV);
             CBCEncryptor(char *key, char*IV);
             ~CBCEncryptor();
     };

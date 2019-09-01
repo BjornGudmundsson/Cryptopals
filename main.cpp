@@ -221,7 +221,22 @@ void test_CBC_bitflip_attack() {
     delete enc;
     std::cout << "CBC bitflipping attack works!" << std::endl;
 }
+
+void test_CBC_padding_oracle() {
+    size_t block_size = 16;
+    std::string test = BreakModes::get_random_string_for_CBC_padding();
+    char *key = (char*) malloc(block_size);
+    char *IV = (char*) malloc(block_size);
+    strcpy(key, "YELLOW SUBMARINE");
+    strcpy(IV, "MELLEW SUBMERINE");
+    encryptionModes::CBCEncryptor *enc = new encryptionModes::CBCEncryptor{key , IV};
+    std::string iv{IV};
+    std::string ct = enc->encrypt_string(test);
+    std::string pt = BreakModes::CBC_padding_oracle_attack(ct, iv, enc, block_size);
+    assert(pt == encryptionModes::PKCS_padding(test, block_size));
+    std::cout << "Padding oracle attack works! " << std::endl;
+}
 int main() {
-    test_CBC_bitflip_attack();
+    test_CBC_padding_oracle();
     return 0;
 }
