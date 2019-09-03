@@ -3,11 +3,11 @@ CFLAGS = -g -Wall
 
 default: crypto
 
-crypto: main.o b64.o encoding.o frequency.o vigenere.o modes.o breaks.o parsing.o
-	$(CC) $(CFLAGS) -o crypto main.o b64.o math.o frequency.o vigenere.o modes.o breaks.o parsing.o -lcryptopp
+crypto: main.o b64.o encoding.o frequency.o vigenere.o modes.o breaks.o parsing.o ctr.o
+	$(CC) $(CFLAGS) -o crypto main.o b64.o math.o frequency.o vigenere.o modes.o breaks.o parsing.o ctr.o -lcryptopp
 
 
-main.o: main.cpp headers/b64.hpp headers/math.hpp headers/frequency.hpp headers/modes.hpp headers/breaks.hpp headers/parsing.hpp
+main.o: main.cpp headers/b64.hpp headers/math.hpp headers/frequency.hpp headers/modes.hpp headers/breaks.hpp headers/parsing.hpp headers/ctr.hpp
 	$(CC) $(CFLAGS) -c main.cpp
 
 b64.o: src/b64.cpp headers/b64.hpp
@@ -29,6 +29,9 @@ breaks.o: src/breaks.cpp headers/breaks.hpp
 
 parsing.o: src/parsing.cpp headers/parsing.hpp 
 	$(CC) $(CFLAGS) -c src/parsing.cpp
+
+ctr.o: src/ctr.cpp headers/ctr.hpp 
+	$(CC) $(CFLAGS) -c src/ctr.cpp
 
 clean:
 	$(RM) *.o ./crypto main *.out

@@ -11,6 +11,7 @@
 #include "headers/modes.hpp"
 #include "headers/breaks.hpp"
 #include "headers/parsing.hpp"
+#include "headers/ctr.hpp"
 #include <map>
 
 void ex4_set1(std::string fn) {
@@ -236,7 +237,30 @@ void test_CBC_padding_oracle() {
     assert(pt == encryptionModes::PKCS_padding(test, block_size));
     std::cout << "Padding oracle attack works! " << std::endl;
 }
+
+void test_little_endian() {
+    unsigned long long k =  1;
+    std::string t = ctr::little_endian_64bit(1);
+    for (int i: t) {
+        std::cout << "I: " << i << std::endl;
+    }
+}
+
+void test_CTR_mode() {
+    char *key = (char*) malloc(16);
+    strcpy(key, "YELLOW SUBMARINE");
+    ctr::CTR_Mode enc(key, 0, 16);
+    std::string pt = "For instance, for the first 16 bytes of a message with these parameters:For instance, for the first 16 bytes of a message with these parameters:";
+    std::string ct = enc.encrypt_string(pt);
+    assert(ct != pt);
+    assert(pt == enc.decrypt_string(ct));
+    std::string test = "L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==";
+    std::string test_ct = base64::b64_to_bytes(test);
+    std::cout << "Size: " <<test_ct.size() << std::endl;
+    std::string test_pt = enc.decrypt_string(test_ct);
+    std::cout << "Test pt: " << test_pt << std::endl;
+}
 int main() {
-    test_CBC_padding_oracle();
+    test_CTR_mode();
     return 0;
 }

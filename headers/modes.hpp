@@ -4,6 +4,7 @@
 #include "../headers/math.hpp"
 namespace encryptionModes {
     std::string decrypt_ECB_mode_128bits(std::string ct, std::string key);
+    std::string encrypt_ECB_mode_128bits(std::string pt, std::string key);
     std::string PKCS_padding(std::string s, size_t block_size);
     std::string remove_PKCS_padding(std::string s, size_t block_size);
     void encrypt_ECB_mode_128bits(char *pt, char *key);
